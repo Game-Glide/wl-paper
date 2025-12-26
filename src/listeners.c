@@ -1,3 +1,5 @@
+#include "wayland-egl.h"
+#include "glad/glad.h"
 #include "listeners.h"
 #include "rendering.h"
 #include "main.h"
@@ -22,13 +24,31 @@ void handle_global_remove(void *data, struct wl_registry *wl_registry, uint32_t 
 }
 
 void handle_layer_surface_configure(void *data, struct zwlr_layer_surface_v1 *zwlr_layer_surface_v1, uint32_t serial, uint32_t width, uint32_t height) {
+    printf("HELP ME\n");
     app_state* state = data;
-    state->render_state->height = height;
-    state->render_state->width = width;
+    if (state->is_first_configure == 1) {
+        window_height = height;
+        window_width = width;
 
-    zwlr_layer_surface_v1_ack_configure(zwlr_layer_surface_v1, serial);
-    wl_surface_commit(state->wl_surface);
-    draw(state);
+        state->is_first_configure = 0;
+        zwlr_layer_surface_v1_ack_configure(zwlr_layer_surface_v1, serial);
+        wl_surface_commit(state->wl_surface);
+    } else {
+        zwlr_layer_surface_v1_ack_configure(zwlr_layer_surface_v1, serial);
+        eglDestroySurface(egl_display, egl_surface);
+        wl_egl_window_resize(egl_window, width, height, 0, 0);
+        egl_surface = eglCreateWindowSurface(egl_display, egl_config, egl_window, NULL);
+        eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, egl_context);
+        glViewport(0, 0, window_width, window_height);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        printf("configuring layer surface, width: %d, height: %d", window_width, window_height);
+        draw();
+
+        eglSwapBuffers(egl_display, egl_surface);
+        wl_surface_commit(state->wl_surface);
+    }
+
 }
 
 void handle_layer_surface_closed(void *data, struct zwlr_layer_surface_v1 *zwlr_layer_surface_v1) {

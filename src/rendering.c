@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "wayland-client.h"
+#include "wayland-egl.h"
 #include "glad/glad_egl.h"
 #include "glad/glad.h"
 #include "rendering.h"
@@ -8,19 +10,17 @@
 #include "main.h"
 
 void init_egl(app_state* state) {
-    state->render_state->egl_display = eglGetPlatformDisplay(EGL_PLATFORM_WAYLAND_KHR, state->wl_display, NULL);
-    if (state->render_state->egl_display == EGL_NO_DISPLAY) {
-        fprintf(stderr, "Failed to get EGL display");
-        cleanup(state);
-        exit(1);  
+    egl_window = wl_egl_window_create(state->wl_surface, window_width, window_height);
+    egl_display = eglGetPlatformDisplay(EGL_PLATFORM_WAYLAND_KHR, state->wl_display, NULL);
+    if (egl_display == EGL_NO_DISPLAY) {
+        fprintf(stderr, "Failed to get EGL display\n");
+        cleanup(state, 1);
     }
-    if (!eglInitialize(state->render_state->egl_display, NULL, NULL)) {
-        fprintf(stderr, "Failed to initialize EGL");
-        cleanup(state);
-        exit(1);
+    if (!eglInitialize(egl_display, NULL, NULL)) {
+        fprintf(stderr, "Failed to initialize EGL\n");
+        cleanup(state, 1);
     }
 
-    eglBindAPI(EGL_OPENGL_API);
     const EGLint win_attrib[] = {
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
         EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
@@ -32,11 +32,12 @@ void init_egl(app_state* state) {
     };
 
     EGLint num_config;
-    if (!eglChooseConfig(state->render_state->egl_display, win_attrib, state->render_state->egl_config, 1, &num_config)) {
-        fprintf(stderr, "Failed to set EGL frame buffer config");
-        cleanup(state);
-        exit(1);
+    if (!eglChooseConfig(egl_display, win_attrib, egl_config, 1, &num_config)) {
+        fprintf(stderr, "Failed to set EGL frame buffer config\n");
+        cleanup(state, 1);
     }
+
+    eglBindAPI(EGL_OPENGL_API);
 
     // Check for OpenGL compatibility for creating egl context
     static const struct { int major, minor; } gl_versions[] = {
@@ -44,37 +45,35 @@ void init_egl(app_state* state) {
         {3, 3}, {3, 2}, {3, 1}, {3, 0},
         {0, 0}
     };
-    state->render_state->egl_context = NULL;
+    egl_context = NULL;
     for (uint32_t i=0; gl_versions[i].major > 0; i++) {
         const EGLint ctx_attrib[] = {
             EGL_CONTEXT_MAJOR_VERSION, gl_versions[i].major,
             EGL_CONTEXT_MINOR_VERSION, gl_versions[i].minor,
             EGL_NONE
         };
-        state->render_state->egl_context = eglCreateContext(state->render_state->egl_display, state->render_state->egl_config, EGL_NO_CONTEXT, ctx_attrib);
-        if (state->render_state->egl_context) {
-            fprintf(stderr, "OpenGL %i.%i EGL context created", gl_versions[i].major, gl_versions[i].minor);
+        egl_context = eglCreateContext(egl_display, egl_config, EGL_NO_CONTEXT, ctx_attrib);
+        if (egl_context) {
+            fprintf(stderr, "OpenGL %i.%i EGL context created\n", gl_versions[i].major, gl_versions[i].minor);
         }
     }
-    if (!state->render_state->egl_context) {
-        fprintf(stderr, "Failed to create EGL context");
-        cleanup(state);
-        exit(1);
+    if (!egl_context) {
+        fprintf(stderr, "Failed to create EGL context\n");
+        cleanup(state, 1);
     }
 
-    if (!eglMakeCurrent(state->render_state->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, state->render_state->egl_context)) {
-        fprintf(stderr, "Failed to make context current");
-        cleanup(state);
-        exit(1);
+    egl_surface = eglCreateWindowSurface(egl_display, egl_config, egl_window, NULL);
+
+    if (!eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, egl_context)) {
+        fprintf(stderr, "Failed to make context current\n");
+        cleanup(state, 1);
     }
 
     if (!gladLoadGLLoader((GLADloadproc)eglGetProcAddress)) {
-        fprintf(stderr, "Failed to load OpenGL");
-        cleanup(state);
-        exit(1);
+        fprintf(stderr, "Failed to load OpenGL\n");
+        cleanup(state, 1);
     }
 }
-
 
 void create_layer(app_state* state) {
     wl_display_roundtrip(state->wl_display);
@@ -88,13 +87,8 @@ void create_layer(app_state* state) {
     zwlr_layer_surface_v1_set_keyboard_interactivity(state->layer_surface, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
 }
 
-void draw(app_state* state) {
-    glViewport(0, 0, state->render_state->width, state->render_state->width);
-    glClear(GL_COLOR_BUFFER_BIT);
+void draw() {
     glClearColor(1.0, 1.0, 1.0, 1.0);
-
-    eglSwapBuffers(state->render_state->egl_display, state->render_state->egl_surface);
-    wl_surface_commit(state->wl_surface);
 }
 
 void destroy_layer(app_state* state) {

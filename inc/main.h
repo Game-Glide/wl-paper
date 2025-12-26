@@ -12,18 +12,17 @@ struct app_state {
     struct wl_output* wl_output;
     struct zwlr_layer_shell_v1* layer_shell;
     struct zwlr_layer_surface_v1* layer_surface;
-    struct rendering_state* render_state;
+
+    uint8_t is_first_configure;
 } typedef app_state;
 
-struct rendering_state {
-    EGLContext* egl_context;
-    EGLSurface* egl_surface;
-    EGLDisplay egl_display;
-    EGLConfig* egl_config;
+extern struct wl_egl_window* egl_window;
+extern EGLContext* egl_context;
+extern EGLSurface* egl_surface;
+extern EGLDisplay egl_display;
+extern EGLConfig* egl_config;
+extern uint32_t window_width, window_height, window_scale;
 
-    uint32_t width, height, scale;
-} typedef rendering_state;
-
-void cleanup(app_state* state);
+void cleanup(app_state* state, uint32_t exit_status);
 
 #endif
