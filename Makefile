@@ -1,9 +1,10 @@
 CC = gcc
 
-CFLAGS = -Werror -Wall -g
-INCLUDES = -Iinc -Ivendor/inc -I/usr/include -IEGL -IGL -Iwayland-egl
+APP_CFLAGS    = -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -g
+VENDOR_CFLAGS = -Wall -Wextra -Wno-unused-parameter -g
 
-LIBS = -lwayland-client -lEGL -lGL -lwayland-egl
+INCLUDES = -Iinc -Ivendor/inc -I/usr/include -IEGL -IGL -Iwayland-egl
+LIBS     = -lwayland-client -lEGL -lGL -lwayland-egl
 
 TARGET = wl-paper
 
@@ -21,12 +22,15 @@ dirs:
 	mkdir -p $(OBJ_DIR)/src $(OBJ_DIR)/vendor $(OUT_DIR)
 
 $(OUT_DIR)/$(TARGET): $(OBJECTS)
-	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
+	$(CC) $(APP_CFLAGS) $^ -o $@ $(LIBS)
 
-$(OBJ_DIR)/%.o: %.c | dirs
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+$(OBJ_DIR)/src/%.o: src/%.c | dirs
+	$(CC) $(APP_CFLAGS) $(INCLUDES) -c $< -o $@
+
+$(OBJ_DIR)/vendor/%.o: vendor/%.c | dirs
+	$(CC) $(VENDOR_CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all clean dirs run
+.PHONY: all clean dirs

@@ -6,7 +6,7 @@
 #include <wayland-egl.h>
 #include "zwlr-layer-shell-unstable-v1.h"
 
-struct app_state {
+typedef struct app_state {
     struct wl_display* wl_display;
     struct wl_registry* wl_registry;
     struct wl_compositor* wl_compositor;
@@ -23,7 +23,7 @@ struct app_state {
     uint32_t window_width, window_height, window_scale;
 
     bool is_egl_ready;
-} typedef app_state;
+} app_state;
 
 void cleanup(app_state* state, uint32_t exit_status);
 
