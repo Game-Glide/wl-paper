@@ -1,7 +1,7 @@
 CC = gcc
 
 CFLAGS = -Werror -Wall -g
-INCLUDES = -Iinc -Ivendor/inc -I/usr/include -IEGL -IGL
+INCLUDES = -Iinc -Ivendor/inc -I/usr/include -IEGL -IGL -Iwayland-egl
 
 LIBS = -lwayland-client -lEGL -lGL -lwayland-egl
 

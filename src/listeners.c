@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "wayland-egl.h"
 #include "glad/glad.h"
 #include "listeners.h"
@@ -24,31 +25,35 @@ void handle_global_remove(void *data, struct wl_registry *wl_registry, uint32_t 
 }
 
 void handle_layer_surface_configure(void *data, struct zwlr_layer_surface_v1 *zwlr_layer_surface_v1, uint32_t serial, uint32_t width, uint32_t height) {
-    printf("HELP ME\n");
-    app_state* state = data;
-    if (state->is_first_configure == 1) {
-        window_height = height;
-        window_width = width;
-
-        state->is_first_configure = 0;
+    if (width == 0 || height == 0) {
         zwlr_layer_surface_v1_ack_configure(zwlr_layer_surface_v1, serial);
-        wl_surface_commit(state->wl_surface);
-    } else {
-        zwlr_layer_surface_v1_ack_configure(zwlr_layer_surface_v1, serial);
-        eglDestroySurface(egl_display, egl_surface);
-        wl_egl_window_resize(egl_window, width, height, 0, 0);
-        egl_surface = eglCreateWindowSurface(egl_display, egl_config, egl_window, NULL);
-        eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, egl_context);
-        glViewport(0, 0, window_width, window_height);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        printf("configuring layer surface, width: %d, height: %d", window_width, window_height);
-        draw();
-
-        eglSwapBuffers(egl_display, egl_surface);
-        wl_surface_commit(state->wl_surface);
+        return;
     }
+    app_state* state = data;
+    state->window_height = height;
+    state->window_width = width;
 
+    zwlr_layer_surface_v1_ack_configure(zwlr_layer_surface_v1, serial);
+
+    if (!state->is_egl_ready) {
+        init_egl(state);
+
+        draw(state);
+
+        eglSwapBuffers(state->egl_display, state->egl_surface);
+        state->is_egl_ready = true;
+    } else {
+        wl_egl_window_resize(
+            state->egl_window,
+            state->window_width,
+            state->window_height,
+            0, 0
+        );
+
+        draw(state);
+
+        eglSwapBuffers(state->egl_display, state->egl_surface);
+    }
 }
 
 void handle_layer_surface_closed(void *data, struct zwlr_layer_surface_v1 *zwlr_layer_surface_v1) {

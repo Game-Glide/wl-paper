@@ -1,7 +1,9 @@
 #ifndef MAIN_H
 #define MAIN_H
 #include <wayland-client.h>
+#include <stdbool.h>
 #include <EGL/egl.h>
+#include <wayland-egl.h>
 #include "wlr-layer-shell-unstable-v1.h"
 
 struct app_state {
@@ -13,15 +15,15 @@ struct app_state {
     struct zwlr_layer_shell_v1* layer_shell;
     struct zwlr_layer_surface_v1* layer_surface;
 
-    uint8_t is_first_configure;
-} typedef app_state;
+    struct wl_egl_window* egl_window;
+    EGLContext egl_context;
+    EGLSurface egl_surface;
+    EGLDisplay egl_display;
+    EGLConfig egl_config;
+    uint32_t window_width, window_height, window_scale;
 
-extern struct wl_egl_window* egl_window;
-extern EGLContext* egl_context;
-extern EGLSurface* egl_surface;
-extern EGLDisplay egl_display;
-extern EGLConfig* egl_config;
-extern uint32_t window_width, window_height, window_scale;
+    bool is_egl_ready;
+} typedef app_state;
 
 void cleanup(app_state* state, uint32_t exit_status);
 
