@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <EGL/egl.h>
 #include <wayland-egl.h>
-#include "wlr-layer-shell-unstable-v1.h"
+#include "zwlr-layer-shell-unstable-v1.h"
 
 struct app_state {
     struct wl_display* wl_display;

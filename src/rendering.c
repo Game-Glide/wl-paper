@@ -9,6 +9,29 @@
 #include "listeners.h"
 #include "main.h"
 
+#define CASE_STR(value) case value: return #value;
+const char *eglGetErrorString(EGLint error) {
+    switch (error) {
+        CASE_STR(EGL_SUCCESS)
+        CASE_STR(EGL_NOT_INITIALIZED)
+        CASE_STR(EGL_BAD_ACCESS)
+        CASE_STR(EGL_BAD_ALLOC)
+        CASE_STR(EGL_BAD_ATTRIBUTE)
+        CASE_STR(EGL_BAD_CONTEXT)
+        CASE_STR(EGL_BAD_CONFIG)
+        CASE_STR(EGL_BAD_CURRENT_SURFACE)
+        CASE_STR(EGL_BAD_DISPLAY)
+        CASE_STR(EGL_BAD_SURFACE)
+        CASE_STR(EGL_BAD_MATCH)
+        CASE_STR(EGL_BAD_PARAMETER)
+        CASE_STR(EGL_BAD_NATIVE_PIXMAP)
+        CASE_STR(EGL_BAD_NATIVE_WINDOW)
+        CASE_STR(EGL_CONTEXT_LOST)
+    default: return "Unknown Error";
+    }
+}
+#undef CASE_STR
+
 void init_egl(app_state* state) {
     const char *exts = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
     if (!strstr(exts, "EGL_KHR_platform_wayland")) {
@@ -36,7 +59,7 @@ void init_egl(app_state* state) {
     };
     
     EGLint num_config;
-    if (!eglChooseConfig(state->egl_display, win_attrib, state->egl_config, 1, &num_config)) {
+    if (!eglChooseConfig(state->egl_display, win_attrib, &state->egl_config, 1, &num_config)) {
         fprintf(stderr, "Failed to set EGL frame buffer config\n");
         cleanup(state, 1);
     }
@@ -45,13 +68,13 @@ void init_egl(app_state* state) {
     
     state->egl_context = NULL;
     const EGLint ctx_attrib[] = {
-        EGL_CONTEXT_CLIENT_VERSION, 3,
+        EGL_CONTEXT_CLIENT_VERSION, 2,
         EGL_NONE
     };
     
     state->egl_context = eglCreateContext(state->egl_display, state->egl_config, EGL_NO_CONTEXT, ctx_attrib);
     if (state->egl_context) {
-        fprintf(stderr, "OpenGL ES %i EGL context created\n", 3);
+        fprintf(stderr, "OpenGL ES %i EGL context created\n", 2);
     }
     
     if (!state->egl_context) {
@@ -60,14 +83,22 @@ void init_egl(app_state* state) {
     }
     
     state->egl_window = wl_egl_window_create(state->wl_surface, state->window_width, state->window_height);
-    state->egl_surface = eglCreateWindowSurface(state->egl_display, state->egl_config, state->egl_window, NULL);
+    if (state->egl_window) {
+        state->egl_surface = eglCreatePlatformWindowSurface(state->egl_display, state->egl_config, state->egl_window, NULL);
+
+        if (!state->egl_surface) {
+            fprintf(stderr, "Failed to create surface %s\n", eglGetErrorString(eglGetError()));
+        }
+    } else {
+        fprintf(stderr, "Failed to create egl window %s\n", eglGetErrorString(eglGetError()));
+    }
     
     if (!eglMakeCurrent(state->egl_display, state->egl_surface, state->egl_surface, state->egl_context)) {
         fprintf(stderr, "Failed to make context current\n");
         cleanup(state, 1);
     }
     
-    if (!gladLoadGLLoader((GLADloadproc)eglGetProcAddress)) {
+    if (!gladLoadGLES2Loader((GLADloadproc)eglGetProcAddress)) {
         fprintf(stderr, "Failed to load OpenGL\n");
         cleanup(state, 1);
     }
@@ -92,6 +123,10 @@ void draw(app_state* state) {
     glViewport(0, 0, state->window_width, state->window_height);
     glClearColor(1, 1, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    if(!eglSwapBuffers(state->egl_display, state->egl_surface)) {
+        fprintf(stderr, "Failed to swap buffers %s\n", eglGetErrorString(eglGetError()));
+    }
 }
 
 void destroy_layer(app_state* state) {

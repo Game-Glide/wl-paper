@@ -40,7 +40,6 @@ void handle_layer_surface_configure(void *data, struct zwlr_layer_surface_v1 *zw
 
         draw(state);
 
-        eglSwapBuffers(state->egl_display, state->egl_surface);
         state->is_egl_ready = true;
     } else {
         wl_egl_window_resize(
