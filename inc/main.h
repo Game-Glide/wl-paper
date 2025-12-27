@@ -6,6 +6,13 @@
 #include <wayland-egl.h>
 #include "zwlr-layer-shell-unstable-v1.h"
 
+#define IF_EXISTS_THEN(obj, code) \
+    do {                          \
+        if (obj) {                \
+            code;                 \
+        }                         \
+    } while (0)
+
 typedef struct app_state {
     struct wl_display* wl_display;
     struct wl_registry* wl_registry;

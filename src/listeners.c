@@ -56,5 +56,6 @@ void handle_layer_surface_configure(void *data, struct zwlr_layer_surface_v1 *zw
 }
 
 void handle_layer_surface_closed(void *data, struct zwlr_layer_surface_v1 *zwlr_layer_surface_v1) {
-    // Not sure yet again
+    app_state* state = data;
+    destroy_layer(state);
 }

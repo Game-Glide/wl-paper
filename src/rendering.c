@@ -33,10 +33,9 @@ const char *eglGetErrorString(EGLint error) {
 #undef CASE_STR
 
 void init_egl(app_state* state) {
-    const char *exts = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
-    if (!strstr(exts, "EGL_KHR_platform_wayland")) {
+    if (!strstr(eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS), "EGL_KHR_platform_wayland")) {
         fprintf(stderr, "EGL_KHR_platform_wayland not supported\n");
-        exit(1);
+        cleanup(state, 1);
     }
     state->egl_display = eglGetPlatformDisplay(EGL_PLATFORM_WAYLAND_KHR, state->wl_display, NULL);
     if (state->egl_display == EGL_NO_DISPLAY) {
@@ -120,6 +119,7 @@ void create_layer(app_state* state) {
 }
 
 void draw(app_state* state) {
+    printf("rendering\n");
     glViewport(0, 0, state->window_width, state->window_height);
     glClearColor(1, 1, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -130,5 +130,7 @@ void draw(app_state* state) {
 }
 
 void destroy_layer(app_state* state) {
-    zwlr_layer_surface_v1_destroy(state->layer_surface);
+    IF_EXISTS_THEN(state->layer_surface, zwlr_layer_surface_v1_destroy(state->layer_surface));
+    IF_EXISTS_THEN(state->layer_shell, zwlr_layer_shell_v1_destroy(state->layer_shell));
+    IF_EXISTS_THEN(state->wl_surface, wl_surface_destroy(state->wl_surface));
 }

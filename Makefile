@@ -1,20 +1,20 @@
 CC = gcc
 
-APP_CFLAGS    = -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -g
+APP_CFLAGS = -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -g -D_POSIX_C_SOURCE=200809L
 VENDOR_CFLAGS = -Wall -Wextra -Wno-unused-parameter -g
 
 INCLUDES = -Iinc -Ivendor/inc -I/usr/include -IEGL -IGL -Iwayland-egl
-LIBS     = -lwayland-client -lEGL -lGL -lwayland-egl
+LIBS = -lwayland-client -lEGL -lGL -lwayland-egl
 
 TARGET = wl-paper
 
 BUILD_DIR = build
-OBJ_DIR   = $(BUILD_DIR)/obj
-OUT_DIR   = $(BUILD_DIR)/out
+OBJ_DIR = $(BUILD_DIR)/obj
+OUT_DIR = $(BUILD_DIR)/out
 
 SRC_DIRS = src vendor
-SOURCES  = $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
-OBJECTS  = $(SOURCES:%.c=$(OBJ_DIR)/%.o)
+SOURCES = $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
+OBJECTS = $(SOURCES:%.c=$(OBJ_DIR)/%.o)
 
 all: dirs $(OUT_DIR)/$(TARGET)
 
@@ -32,5 +32,8 @@ $(OBJ_DIR)/vendor/%.o: vendor/%.c | dirs
 
 clean:
 	rm -rf $(BUILD_DIR)
+
+profile: $(OUT_DIR)/$(TARGET)
+	valgrind --leak-check=full --track-origins=yes --log-file=logs/valgrind.txt ./build/out/wl-paper
 
 .PHONY: all clean dirs
