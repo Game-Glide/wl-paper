@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include <string.h>
 #include "wayland-client.h"
 #include "wayland-egl.h"
@@ -8,29 +9,6 @@
 #include "rendering.h"
 #include "listeners.h"
 #include "main.h"
-
-#define CASE_STR(value) case value: return #value;
-const char *eglGetErrorString(EGLint error) {
-    switch (error) {
-        CASE_STR(EGL_SUCCESS)
-        CASE_STR(EGL_NOT_INITIALIZED)
-        CASE_STR(EGL_BAD_ACCESS)
-        CASE_STR(EGL_BAD_ALLOC)
-        CASE_STR(EGL_BAD_ATTRIBUTE)
-        CASE_STR(EGL_BAD_CONTEXT)
-        CASE_STR(EGL_BAD_CONFIG)
-        CASE_STR(EGL_BAD_CURRENT_SURFACE)
-        CASE_STR(EGL_BAD_DISPLAY)
-        CASE_STR(EGL_BAD_SURFACE)
-        CASE_STR(EGL_BAD_MATCH)
-        CASE_STR(EGL_BAD_PARAMETER)
-        CASE_STR(EGL_BAD_NATIVE_PIXMAP)
-        CASE_STR(EGL_BAD_NATIVE_WINDOW)
-        CASE_STR(EGL_CONTEXT_LOST)
-    default: return "Unknown Error";
-    }
-}
-#undef CASE_STR
 
 void init_egl(app_state* state) {
     if (!strstr(eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS), "EGL_KHR_platform_wayland")) {
@@ -86,10 +64,10 @@ void init_egl(app_state* state) {
         state->egl_surface = eglCreatePlatformWindowSurface(state->egl_display, state->egl_config, state->egl_window, NULL);
 
         if (!state->egl_surface) {
-            fprintf(stderr, "Failed to create surface %s\n", eglGetErrorString(eglGetError()));
+            fprintf(stderr, "Failed to create surface %#x\n", eglGetError());
         }
     } else {
-        fprintf(stderr, "Failed to create egl window %s\n", eglGetErrorString(eglGetError()));
+        fprintf(stderr, "Failed to create egl window %#x\n", eglGetError());
     }
     
     if (!eglMakeCurrent(state->egl_display, state->egl_surface, state->egl_surface, state->egl_context)) {
@@ -107,6 +85,9 @@ void create_layer(app_state* state) {
     wl_display_roundtrip(state->wl_display);
     state->wl_surface = wl_compositor_create_surface(state->wl_compositor);
     wl_surface_set_buffer_scale(state->wl_surface, 1);
+    struct wl_callback* wl_surface_cb = wl_surface_frame(state->wl_surface);
+    wl_callback_add_listener(wl_surface_cb, &wl_surface_frame_cb_listener, state);
+
     state->layer_surface = zwlr_layer_shell_v1_get_layer_surface(state->layer_shell, state->wl_surface, state->wl_output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "wlpaper");
     zwlr_layer_surface_v1_add_listener(state->layer_surface, &layer_surface_listener, state);
     
@@ -119,14 +100,13 @@ void create_layer(app_state* state) {
 }
 
 void draw(app_state* state) {
-    printf("rendering\n");
     glViewport(0, 0, state->window_width, state->window_height);
-    glClearColor(1, 1, 1, 1);
+    srand((unsigned int)time(NULL));
+    float random_float_r = (float)rand() / (float)RAND_MAX;
+    float random_float_g = (float)rand() / (float)RAND_MAX;
+    float random_float_b = (float)rand() / (float)RAND_MAX;
+    glClearColor(random_float_r, random_float_g, random_float_b, 1);
     glClear(GL_COLOR_BUFFER_BIT);
-
-    if(!eglSwapBuffers(state->egl_display, state->egl_surface)) {
-        fprintf(stderr, "Failed to swap buffers %s\n", eglGetErrorString(eglGetError()));
-    }
 }
 
 void destroy_layer(app_state* state) {
