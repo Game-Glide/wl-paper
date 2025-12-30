@@ -39,7 +39,7 @@ void init_mpv(app_state* state) {
     mpv_set_option_string(state->mpv, "vo", "libmpv");
     mpv_set_option_string(state->mpv, "hwdec", "auto");
     mpv_set_option_string(state->mpv, "opengl-es", "yes");
-    mpv_set_option_string(state->mpv, "log-file", "~/Projects/wl-paper/logs/mpv.log");
+    mpv_set_option_string(state->mpv, "log-file", "./logs/mpv.log");
 
     mpv_initialize(state->mpv);
 

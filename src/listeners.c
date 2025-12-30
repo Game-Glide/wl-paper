@@ -66,15 +66,15 @@ void handle_layer_surface_configure(void *data, struct zwlr_layer_surface_v1 *zw
         state->is_egl_ready = true;
     } else {
         printf("resizing window\n");
-        eglMakeCurrent(state->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, state->egl_context);
-        eglDestroySurface(state->egl_display, state->egl_surface);
+        // eglMakeCurrent(state->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, state->egl_context);
+        // eglDestroySurface(state->egl_display, state->egl_surface);
         wl_egl_window_resize(
             state->egl_window,
             state->window_width,
             state->window_height,
             0, 0
         );
-        state->egl_surface = eglCreatePlatformWindowSurface(state->egl_display, state->egl_config, state->egl_window, NULL);
+        // state->egl_surface = eglCreatePlatformWindowSurface(state->egl_display, state->egl_config, state->egl_window, NULL);
         if (!state->egl_surface) {
             fprintf(stderr, "Failed to create surface %#x\n", eglGetError());
         }
