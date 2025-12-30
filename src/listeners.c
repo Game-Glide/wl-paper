@@ -84,7 +84,7 @@ void wl_surface_frame_done(void* data, struct wl_callback* cb, uint32_t time) {
     wl_callback_destroy(cb);
     state->frame_callback = NULL;
     
-    if (state->needs_redraw) {
+    // if (state->needs_redraw) {
         eglMakeCurrent(state->egl_display, state->egl_surface, state->egl_surface, state->egl_context);
 
         draw(state);
@@ -95,13 +95,13 @@ void wl_surface_frame_done(void* data, struct wl_callback* cb, uint32_t time) {
             fprintf(stderr, "eglSwapBuffers failed %#x\n", eglGetError());
         }
         state->needs_redraw = false;
-    }
+    // }
     
-    state->frame_callback = wl_surface_frame(state->wl_surface);
-    wl_callback_add_listener(
-        state->frame_callback,
-        &wl_surface_frame_cb_listener,
-        state
-    );
-    wl_surface_commit(state->wl_surface);
+    // state->frame_callback = wl_surface_frame(state->wl_surface);
+    // wl_callback_add_listener(
+    //     state->frame_callback,
+    //     &wl_surface_frame_cb_listener,
+    //     state
+    // );
+    // wl_surface_commit(state->wl_surface);
 }
