@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include <mpv/render_gl.h>
 #include "wayland-client.h"
 #include "wayland-egl.h"
 #include "glad/glad_egl.h"
@@ -82,11 +83,8 @@ void init_egl(app_state* state) {
 }
 
 void create_layer(app_state* state) {
-    wl_display_roundtrip(state->wl_display);
     state->wl_surface = wl_compositor_create_surface(state->wl_compositor);
     wl_surface_set_buffer_scale(state->wl_surface, 1);
-    struct wl_callback* wl_surface_cb = wl_surface_frame(state->wl_surface);
-    wl_callback_add_listener(wl_surface_cb, &wl_surface_frame_cb_listener, state);
 
     state->layer_surface = zwlr_layer_shell_v1_get_layer_surface(state->layer_shell, state->wl_surface, state->wl_output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "wlpaper");
     zwlr_layer_surface_v1_add_listener(state->layer_surface, &layer_surface_listener, state);
@@ -101,12 +99,24 @@ void create_layer(app_state* state) {
 
 void draw(app_state* state) {
     glViewport(0, 0, state->window_width, state->window_height);
-    srand((unsigned int)time(NULL));
-    float random_float_r = (float)rand() / (float)RAND_MAX;
-    float random_float_g = (float)rand() / (float)RAND_MAX;
-    float random_float_b = (float)rand() / (float)RAND_MAX;
-    glClearColor(random_float_r, random_float_g, random_float_b, 1);
+    glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    mpv_opengl_fbo fbo = {
+        .fbo = 0,
+        .w = state->window_width,
+        .h = state->window_height,
+    };
+
+    int flip = 1;
+
+    mpv_render_param params[] = {
+        { MPV_RENDER_PARAM_OPENGL_FBO, &fbo },
+        { MPV_RENDER_PARAM_FLIP_Y, &flip },
+        { MPV_RENDER_PARAM_INVALID, NULL }
+    };
+
+    mpv_render_context_render(state->mpv_ctx, params);
 }
 
 void destroy_layer(app_state* state) {

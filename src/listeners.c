@@ -7,10 +7,10 @@
 #include "glad/glad.h"
 #include "listeners.h"
 #include "rendering.h"
+#include "mpv.h"
 #include "main.h"
 
 void handle_global_bind(void* data, struct wl_registry* wl_registry, uint32_t name, const char *interface, uint32_t version) {
-    printf("interface: %s, name: %d, version: %d\n", interface, name, version);
     app_state* state = data;
     if (strcmp(interface, wl_compositor_interface.name) == 0) {
         state->wl_compositor = wl_registry_bind(wl_registry, name, &wl_compositor_interface, 6);
@@ -39,16 +39,20 @@ void handle_layer_surface_configure(void *data, struct zwlr_layer_surface_v1 *zw
 
     if (!state->is_egl_ready) {
         init_egl(state);
-
-        draw(state);
+        init_mpv(state);
+        load_file(state, "~/wallpapers/cottage.mp4");
     
+        state->needs_redraw = true;
         wl_surface_damage_buffer(state->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
-        if(!eglSwapBuffers(state->egl_display, state->egl_surface)) {
-            fprintf(stderr, "Failed to swap buffers %#x\n", eglGetError());
-        }
+        
+        state->frame_callback = wl_surface_frame(state->wl_surface);
+        wl_callback_add_listener(state->frame_callback, &wl_surface_frame_cb_listener, state);
+        wl_surface_commit(state->wl_surface);
+
         state->is_egl_ready = true;
     } else {
         printf("resizing window\n");
+        eglMakeCurrent(state->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, state->egl_context);
         eglDestroySurface(state->egl_display, state->egl_surface);
         wl_egl_window_resize(
             state->egl_window,
@@ -56,15 +60,14 @@ void handle_layer_surface_configure(void *data, struct zwlr_layer_surface_v1 *zw
             state->window_height,
             0, 0
         );
-        state->egl_surface = eglCreateWindowSurface(state->egl_display, state->egl_config, state->egl_window, NULL);
+        state->egl_surface = eglCreatePlatformWindowSurface(state->egl_display, state->egl_config, state->egl_window, NULL);
         eglMakeCurrent(state->egl_display, state->egl_surface, state->egl_surface, state->egl_context);
-
-        draw(state);
         
         wl_surface_damage_buffer(state->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
         if(!eglSwapBuffers(state->egl_display, state->egl_surface)) {
             fprintf(stderr, "Failed to swap buffers %#x\n", eglGetError());
         }
+        wl_surface_commit(state->wl_surface);
     }
 }
 
@@ -74,18 +77,28 @@ void handle_layer_surface_closed(void *data, struct zwlr_layer_surface_v1 *zwlr_
 }
 
 void wl_surface_frame_done(void* data, struct wl_callback* cb, uint32_t time) {
-    wl_callback_destroy(cb);
-
     app_state* state = data;
-    cb = wl_surface_frame(state->wl_surface);
-    wl_callback_add_listener(cb, &wl_surface_frame_cb_listener, state);
-
-    draw(state);
+    wl_callback_destroy(cb);
+    state->frame_callback = NULL;
     
-    if(!eglSwapBuffers(state->egl_display, state->egl_surface)) {
-        fprintf(stderr, "Failed to swap buffers %#x\n", eglGetError());
-    }
+    if (state->needs_redraw) {
+        eglMakeCurrent(state->egl_display, state->egl_surface, state->egl_surface, state->egl_context);
 
-    wl_surface_damage_buffer(state->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
+        draw(state);
+
+        wl_surface_damage_buffer(state->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
+
+        if (!eglSwapBuffers(state->egl_display, state->egl_surface)) {
+            fprintf(stderr, "eglSwapBuffers failed %#x\n", eglGetError());
+        }
+        state->needs_redraw = false;
+    }
+    
+    state->frame_callback = wl_surface_frame(state->wl_surface);
+    wl_callback_add_listener(
+        state->frame_callback,
+        &wl_surface_frame_cb_listener,
+        state
+    );
     wl_surface_commit(state->wl_surface);
 }

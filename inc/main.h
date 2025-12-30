@@ -2,8 +2,11 @@
 #define MAIN_H
 #include <wayland-client.h>
 #include <stdbool.h>
+#include <signal.h>
 #include <EGL/egl.h>
 #include <wayland-egl.h>
+#include <mpv/client.h>
+#include <mpv/render.h>
 #include "zwlr-layer-shell-unstable-v1.h"
 
 #define IF_EXISTS_THEN(obj, code) \
@@ -29,7 +32,15 @@ typedef struct app_state {
     EGLConfig egl_config;
     uint32_t window_width, window_height, window_scale;
 
+    struct wl_callback* frame_callback;
+    mpv_handle* mpv;
+    mpv_render_context* mpv_ctx;
+
     bool is_egl_ready;
+    bool needs_redraw;
+
+    volatile sig_atomic_t running;
+    int mpv_fd;
 } app_state;
 
 void cleanup(app_state* state, uint32_t exit_status);

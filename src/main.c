@@ -7,14 +7,13 @@
 #include "main.h"
 #include "listeners.h"
 #include "rendering.h"
+#include "mpv.h"
 
-static app_state state = { 0, .is_egl_ready = false };
-
-static volatile sig_atomic_t running = 1;
+static app_state state = { 0, .is_egl_ready = false, .running = 1 };
 
 void stop_running(int signum) {
     (void)signum;
-    running = 0;
+    state.running = 0;
 }
 
 int main() {
@@ -39,45 +38,63 @@ int main() {
         return 1;
     }
 
-    int fd = wl_display_get_fd(state.wl_display);
-    
-    while (running == 1) {
+    int wl_fd = wl_display_get_fd(state.wl_display);
+
+    while (state.running) {
+        handle_mpv_events(&state);
+
         wl_display_dispatch_pending(state.wl_display);
         wl_display_flush(state.wl_display);
 
-        struct pollfd pfd = {
-            .fd = fd,
-            .events = POLLIN
+        struct pollfd pfds[2] = {
+            {
+                .fd = wl_fd,
+                .events = POLLIN
+            },
+            {
+                .fd = state.mpv_fd,
+                .events = POLLIN
+            }
         };
 
-        int ret = poll(&pfd, 1, -1);
+        int ret = poll(pfds, 2, 5);
         if (ret == -1) {
-            if (errno == EINTR && !running) {
+            if (errno == EINTR && !state.running)
                 break;
-            }
-            
             perror("poll");
             break;
         }
 
-        if (pfd.revents & POLLIN) {
+        if (pfds[0].revents & POLLIN) {
             if (wl_display_dispatch(state.wl_display) == -1) {
                 fprintf(stderr, "Wayland connection lost\n");
                 break;
             }
         }
 
-        if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
-            fprintf(stderr, "Wayland fd error\n");
+        if (pfds[1].revents & POLLIN) {
+            handle_mpv_events(&state);
+        }
+
+        if (pfds[1].revents & (POLLERR | POLLHUP | POLLNVAL)) {
+            fprintf(stderr, "MPV fd error\n");
             break;
         }
 
+        if (pfds[0].revents & (POLLERR | POLLHUP | POLLNVAL)) {
+            fprintf(stderr, "Wayland fd error\n");
+            break;
+        }
     }
 
     cleanup(&state, 0);
 }
 
 void cleanup(app_state* state, uint32_t exit_status) {
+    // MPV Resources
+    IF_EXISTS_THEN(state->mpv_ctx, mpv_render_context_free(state->mpv_ctx));
+    IF_EXISTS_THEN(state->mpv, mpv_terminate_destroy(state->mpv));
+
     // EGL Resources
     if (state->egl_display) {
         eglMakeCurrent(state->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);

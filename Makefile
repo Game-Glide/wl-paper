@@ -4,7 +4,7 @@ APP_CFLAGS = -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -g -D_POSIX_
 VENDOR_CFLAGS = -Wall -Wextra -Wno-unused-parameter -g
 
 INCLUDES = -Iinc -Ivendor/inc -I/usr/include -IEGL -IGL -Iwayland-egl
-LIBS = -lwayland-client -lEGL -lGL -lwayland-egl
+LIBS = -lwayland-client -lEGL -lGL -lwayland-egl -lmpv
 
 TARGET = wl-paper
 
