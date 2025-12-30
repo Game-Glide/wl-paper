@@ -35,6 +35,7 @@ typedef struct app_state {
     struct wl_callback* frame_callback;
     mpv_handle* mpv;
     mpv_render_context* mpv_ctx;
+    char* filename;
 
     bool is_egl_ready;
     bool needs_redraw;

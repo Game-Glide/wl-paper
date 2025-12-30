@@ -60,7 +60,7 @@ void init_mpv(app_state* state) {
     }
 }
 
-void load_file(app_state* state, const char* filename) {
+void load_file(app_state* state, char* filename) {
     const char* cmd[] = {
         "loadfile",
         filename,

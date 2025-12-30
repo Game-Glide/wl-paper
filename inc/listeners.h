@@ -11,18 +11,8 @@ void handle_layer_surface_closed(void *data, struct zwlr_layer_surface_v1 *zwlr_
 
 void wl_surface_frame_done(void *data, struct wl_callback *cb, uint32_t time);
 
-static const struct wl_registry_listener registry_listener = {
-    .global = handle_global_bind,
-    .global_remove = handle_global_remove
-};
-
-static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
-    .configure = handle_layer_surface_configure,
-    .closed = handle_layer_surface_closed,
-};
-
-static const struct wl_callback_listener wl_surface_frame_cb_listener = {
-    .done = wl_surface_frame_done
-};
+extern const struct wl_registry_listener registry_listener;
+extern const struct zwlr_layer_surface_v1_listener layer_surface_listener;
+extern const struct wl_callback_listener wl_surface_frame_cb_listener;
 
 #endif

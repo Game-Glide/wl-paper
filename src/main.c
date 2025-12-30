@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <poll.h>
@@ -16,7 +17,17 @@ void stop_running(int signum) {
     state.running = 0;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+        return 1;
+    }
+    state.filename = strdup(argv[1]);
+    if (!state.filename) {
+        perror("strdup");
+        return 1;
+    }
+
     state.wl_display = wl_display_connect(NULL);
     if (!state.wl_display) {
         fprintf(stderr, "Failed to establish connection with display\n");

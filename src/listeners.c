@@ -10,6 +10,20 @@
 #include "mpv.h"
 #include "main.h"
 
+const struct wl_registry_listener registry_listener = {
+    .global = handle_global_bind,
+    .global_remove = handle_global_remove
+};
+
+const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
+    .configure = handle_layer_surface_configure,
+    .closed = handle_layer_surface_closed,
+};
+
+const struct wl_callback_listener wl_surface_frame_cb_listener = {
+    .done = wl_surface_frame_done
+};
+
 void handle_global_bind(void* data, struct wl_registry* wl_registry, uint32_t name, const char *interface, uint32_t version) {
     app_state* state = data;
     if (strcmp(interface, wl_compositor_interface.name) == 0) {
@@ -40,14 +54,14 @@ void handle_layer_surface_configure(void *data, struct zwlr_layer_surface_v1 *zw
     if (!state->is_egl_ready) {
         init_egl(state);
         init_mpv(state);
-        load_file(state, "~/wallpapers/cottage.mp4");
+        load_file(state, state->filename);
     
-        state->needs_redraw = true;
-        wl_surface_damage_buffer(state->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
+        // state->needs_redraw = true;
+        // wl_surface_damage_buffer(state->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
         
-        state->frame_callback = wl_surface_frame(state->wl_surface);
-        wl_callback_add_listener(state->frame_callback, &wl_surface_frame_cb_listener, state);
-        wl_surface_commit(state->wl_surface);
+        // state->frame_callback = wl_surface_frame(state->wl_surface);
+        // wl_callback_add_listener(state->frame_callback, &wl_surface_frame_cb_listener, state);
+        // wl_surface_commit(state->wl_surface);
 
         state->is_egl_ready = true;
     } else {
@@ -84,6 +98,7 @@ void wl_surface_frame_done(void* data, struct wl_callback* cb, uint32_t time) {
     wl_callback_destroy(cb);
     state->frame_callback = NULL;
     
+    // HACK: Technically we should wait till it tells us to redraw but its laggy otherwise
     // if (state->needs_redraw) {
         eglMakeCurrent(state->egl_display, state->egl_surface, state->egl_surface, state->egl_context);
 
@@ -94,6 +109,7 @@ void wl_surface_frame_done(void* data, struct wl_callback* cb, uint32_t time) {
         if (!eglSwapBuffers(state->egl_display, state->egl_surface)) {
             fprintf(stderr, "eglSwapBuffers failed %#x\n", eglGetError());
         }
+        mpv_render_context_report_swap(state->mpv_ctx);
         state->needs_redraw = false;
     // }
     
