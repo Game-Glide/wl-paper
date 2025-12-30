@@ -84,6 +84,7 @@ void handle_layer_surface_configure(void *data, struct zwlr_layer_surface_v1 *zw
         if(!eglSwapBuffers(state->egl_display, state->egl_surface)) {
             fprintf(stderr, "Failed to swap buffers %#x\n", eglGetError());
         }
+        mpv_render_context_report_swap(state->mpv_ctx);
         wl_surface_commit(state->wl_surface);
     }
 }
