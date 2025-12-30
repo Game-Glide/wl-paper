@@ -116,7 +116,11 @@ void draw(app_state* state) {
         { MPV_RENDER_PARAM_INVALID, NULL }
     };
 
-    mpv_render_context_render(state->mpv_ctx, params);
+    int err = mpv_render_context_render(state->mpv_ctx, params);
+    if (err < 0) {
+        fprintf(stderr, "An error occurred rendering frame %d\n", err);
+        cleanup(state, 1);
+    }
 }
 
 void destroy_layer(app_state* state) {

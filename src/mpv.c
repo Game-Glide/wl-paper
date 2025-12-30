@@ -13,20 +13,20 @@ static void mpv_render_update_cb(void *ctx) {
     printf("mpv - new frame available\n");
     app_state* state = ctx;
     state->needs_redraw = true;
-    if (!state->frame_callback) {
-        printf("Requesting frame\n");
-        state->frame_callback = wl_surface_frame(state->wl_surface);
-        wl_callback_add_listener(
-            state->frame_callback,
-            &wl_surface_frame_cb_listener,
-            state
-        );
-        wl_surface_commit(state->wl_surface);
-    }
+    // if (!state->frame_callback) {
+    //     printf("Requesting frame\n");
+    //     state->frame_callback = wl_surface_frame(state->wl_surface);
+    //     wl_callback_add_listener(
+    //         state->frame_callback,
+    //         &wl_surface_frame_cb_listener,
+    //         state
+    //     );
+    //     wl_surface_commit(state->wl_surface);
+    // }
 }
 
 void init_mpv(app_state* state) {
-        state->mpv = mpv_create();
+    state->mpv = mpv_create();
     if (state->mpv == NULL) {
         fprintf(stderr, "Failed to create mpv handle");
     }
@@ -40,9 +40,7 @@ void init_mpv(app_state* state) {
     mpv_set_option_string(state->mpv, "hwdec", "auto");
     mpv_set_option_string(state->mpv, "gpu-context", "egl");
     mpv_set_option_string(state->mpv, "opengl-es", "yes");
-    mpv_set_option_string(state->mpv, "cache", "no");
-    mpv_set_option_string(state->mpv, "demuxer-max-bytes", "0");
-    mpv_set_option_string(state->mpv, "demuxer-max-back-bytes", "0");
+    mpv_set_option_string(state->mpv, "log-file", "~/Projects/wl-paper/logs/mpv.log");
 
     mpv_initialize(state->mpv);
 
@@ -70,11 +68,14 @@ void load_file(app_state* state, const char* filename) {
         NULL
     };
 
-    mpv_command(state->mpv, cmd);
+    int err = mpv_command(state->mpv, cmd);
+    if (err < 0) {
+        printf("loading video %d\n", err);
+        cleanup(state, 1);
+    }
 }
 
-void handle_mpv_events(app_state *state)
-{
+void handle_mpv_events(app_state *state) {
     while (1) {
         mpv_event *event = mpv_wait_event(state->mpv, 0);
         if (event->event_id == MPV_EVENT_NONE)

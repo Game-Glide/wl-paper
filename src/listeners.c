@@ -61,6 +61,9 @@ void handle_layer_surface_configure(void *data, struct zwlr_layer_surface_v1 *zw
             0, 0
         );
         state->egl_surface = eglCreatePlatformWindowSurface(state->egl_display, state->egl_config, state->egl_window, NULL);
+        if (!state->egl_surface) {
+            fprintf(stderr, "Failed to create surface %#x\n", eglGetError());
+        }
         eglMakeCurrent(state->egl_display, state->egl_surface, state->egl_surface, state->egl_context);
         
         wl_surface_damage_buffer(state->wl_surface, 0, 0, INT32_MAX, INT32_MAX);

@@ -57,7 +57,7 @@ int main() {
             }
         };
 
-        int ret = poll(pfds, 2, 5);
+        int ret = poll(pfds, 2, -1);
         if (ret == -1) {
             if (errno == EINTR && !state.running)
                 break;
