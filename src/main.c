@@ -117,6 +117,7 @@ void cleanup(app_state* state, uint32_t exit_status) {
 
     // Free WL Resources
     destroy_layer(state);
+    IF_EXISTS_THEN(state->frame_callback, wl_callback_destroy(state->frame_callback));
     IF_EXISTS_THEN(state->wl_output, wl_output_destroy(state->wl_output));
     IF_EXISTS_THEN(state->wl_compositor, wl_compositor_destroy(state->wl_compositor));
     IF_EXISTS_THEN(state->wl_registry, wl_registry_destroy(state->wl_registry));
