@@ -31,17 +31,26 @@ void init_mpv(app_state* state) {
     mpv_set_option_string(state->mpv, "gpu-api", "opengl");
     mpv_set_option_string(state->mpv, "log-file", "./logs/mpv.log");
 
-    mpv_initialize(state->mpv);
+    int err = mpv_initialize(state->mpv);
+
+    if (err < 0) {
+        fprintf(stderr, "failed mpv_initialize\n");
+        cleanup(state, 1);
+    }
 
     mpv_render_param params[] = {
         { MPV_RENDER_PARAM_API_TYPE, (void*)MPV_RENDER_API_TYPE_OPENGL },
         { MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &(mpv_opengl_init_params){
-            .get_proc_address = get_proc_address,
+            .get_proc_address = &get_proc_address,
         }},
         { MPV_RENDER_PARAM_INVALID, NULL }
     };
 
-    mpv_render_context_create(&state->mpv_ctx, state->mpv, params);
+    err = mpv_render_context_create(&state->mpv_ctx, state->mpv, params);
+    if (err < 0) {
+        fprintf(stderr, "failed mpv_render_context_create\n");
+        cleanup(state, 1);
+    }
     mpv_render_context_set_update_callback(state->mpv_ctx, mpv_render_update_cb, state);
     state->mpv_fd = mpv_get_wakeup_pipe(state->mpv);
     if (state->mpv_fd < 0) {

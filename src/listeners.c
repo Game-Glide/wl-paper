@@ -99,8 +99,8 @@ void handle_layer_surface_closed(void *data, struct zwlr_layer_surface_v1 *zwlr_
 }
 
 void wl_surface_frame_done(void* data, struct wl_callback* cb, uint32_t time) {
-    app_state* state = data;
     wl_callback_destroy(cb);
+    app_state* state = data;
     state->frame_callback = NULL;
     
     if (state->needs_redraw) {

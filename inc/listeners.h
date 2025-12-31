@@ -1,6 +1,6 @@
 #ifndef LISTENER_H
 #define LISTENER_H
-#include "wayland-client.h"
+#include <wayland-client.h>
 #include "zwlr-layer-shell-unstable-v1.h"
 
 void handle_global_bind(void* data, struct wl_registry* wl_registry, uint32_t name, const char *interface, uint32_t version);

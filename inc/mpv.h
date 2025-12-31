@@ -1,6 +1,6 @@
 #ifndef MPV_H
 #define MPV_H
-#include <main.h>
+#include "main.h"
 
 void init_mpv(app_state* state);
 void load_file(app_state* state, char* filename);
