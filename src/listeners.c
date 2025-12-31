@@ -55,37 +55,41 @@ void handle_layer_surface_configure(void *data, struct zwlr_layer_surface_v1 *zw
         init_egl(state);
         init_mpv(state);
         load_file(state, state->filename);
-    
-        // state->needs_redraw = true;
-        // wl_surface_damage_buffer(state->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
-        
-        // state->frame_callback = wl_surface_frame(state->wl_surface);
-        // wl_callback_add_listener(state->frame_callback, &wl_surface_frame_cb_listener, state);
-        // wl_surface_commit(state->wl_surface);
 
+        if (!state->frame_callback) {
+            state->needs_redraw = true;
+            wl_surface_damage_buffer(state->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
+            
+            state->frame_callback = wl_surface_frame(state->wl_surface);
+            wl_callback_add_listener(state->frame_callback, &wl_surface_frame_cb_listener, state);
+            wl_surface_commit(state->wl_surface);
+        }
+    
         state->is_egl_ready = true;
     } else {
         printf("resizing window\n");
-        // eglMakeCurrent(state->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, state->egl_context);
-        // eglDestroySurface(state->egl_display, state->egl_surface);
         wl_egl_window_resize(
             state->egl_window,
             state->window_width,
             state->window_height,
             0, 0
         );
-        // state->egl_surface = eglCreatePlatformWindowSurface(state->egl_display, state->egl_config, state->egl_window, NULL);
         if (!state->egl_surface) {
             fprintf(stderr, "Failed to create surface %#x\n", eglGetError());
         }
         eglMakeCurrent(state->egl_display, state->egl_surface, state->egl_surface, state->egl_context);
-        
-        wl_surface_damage_buffer(state->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
-        if(!eglSwapBuffers(state->egl_display, state->egl_surface)) {
-            fprintf(stderr, "Failed to swap buffers %#x\n", eglGetError());
+
+        if (!state->frame_callback) {
+            state->needs_redraw = true;
+
+            wl_surface_damage_buffer(state->wl_surface, 0, 0, INT32_MAX, INT32_MAX);
+            if(!eglSwapBuffers(state->egl_display, state->egl_surface)) {
+                fprintf(stderr, "Failed to swap buffers %#x\n", eglGetError());
+            }
+            mpv_render_context_report_swap(state->mpv_ctx);
+            wl_surface_commit(state->wl_surface);
         }
-        mpv_render_context_report_swap(state->mpv_ctx);
-        wl_surface_commit(state->wl_surface);
+
     }
 }
 
@@ -99,8 +103,7 @@ void wl_surface_frame_done(void* data, struct wl_callback* cb, uint32_t time) {
     wl_callback_destroy(cb);
     state->frame_callback = NULL;
     
-    // HACK: Technically we should wait till it tells us to redraw but its laggy otherwise
-    // if (state->needs_redraw) {
+    if (state->needs_redraw) {
         eglMakeCurrent(state->egl_display, state->egl_surface, state->egl_surface, state->egl_context);
 
         draw(state);
@@ -112,13 +115,13 @@ void wl_surface_frame_done(void* data, struct wl_callback* cb, uint32_t time) {
         }
         mpv_render_context_report_swap(state->mpv_ctx);
         state->needs_redraw = false;
-    // }
+    }
     
-    // state->frame_callback = wl_surface_frame(state->wl_surface);
-    // wl_callback_add_listener(
-    //     state->frame_callback,
-    //     &wl_surface_frame_cb_listener,
-    //     state
-    // );
-    // wl_surface_commit(state->wl_surface);
+    state->frame_callback = wl_surface_frame(state->wl_surface);
+    wl_callback_add_listener(
+        state->frame_callback,
+        &wl_surface_frame_cb_listener,
+        state
+    );
+    wl_surface_commit(state->wl_surface);
 }

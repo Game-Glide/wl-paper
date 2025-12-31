@@ -12,15 +12,6 @@ static void* get_proc_address(void *ctx, const char *name) {
 static void mpv_render_update_cb(void *ctx) {
     app_state* state = ctx;
     state->needs_redraw = true;
-    if (!state->frame_callback) {
-        state->frame_callback = wl_surface_frame(state->wl_surface);
-        wl_callback_add_listener(
-            state->frame_callback,
-            &wl_surface_frame_cb_listener,
-            state
-        );
-        wl_surface_commit(state->wl_surface);
-    }
 }
 
 void init_mpv(app_state* state) {

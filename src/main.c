@@ -52,10 +52,16 @@ int main(int argc, char *argv[]) {
     int wl_fd = wl_display_get_fd(state.wl_display);
 
     while (state.running) {
-        handle_mpv_events(&state);
-
-        wl_display_dispatch_pending(state.wl_display);
-        wl_display_flush(state.wl_display);
+        // Process any pending Wayland events first
+        while (wl_display_prepare_read(state.wl_display) != 0) {
+            wl_display_dispatch_pending(state.wl_display);
+        }
+        
+        // Flush outgoing requests
+        if (wl_display_flush(state.wl_display) < 0) {
+            fprintf(stderr, "Failed to flush Wayland display\n");
+            break;
+        }
 
         struct pollfd pfds[2] = {
             {
@@ -69,7 +75,9 @@ int main(int argc, char *argv[]) {
         };
 
         int ret = poll(pfds, 2, -1);
+        
         if (ret == -1) {
+            wl_display_cancel_read(state.wl_display);
             if (errno == EINTR && !state.running)
                 break;
             perror("poll");
@@ -77,10 +85,10 @@ int main(int argc, char *argv[]) {
         }
 
         if (pfds[0].revents & POLLIN) {
-            if (wl_display_dispatch(state.wl_display) == -1) {
-                fprintf(stderr, "Wayland connection lost\n");
-                break;
-            }
+            wl_display_read_events(state.wl_display);
+            wl_display_dispatch_pending(state.wl_display);
+        } else {
+            wl_display_cancel_read(state.wl_display);
         }
 
         if (pfds[1].revents & POLLIN) {
