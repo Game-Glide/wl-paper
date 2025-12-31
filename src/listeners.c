@@ -105,7 +105,7 @@ void wl_surface_frame_done(void* data, struct wl_callback* cb, uint32_t time) {
     
     if (state->needs_redraw) {
         eglMakeCurrent(state->egl_display, state->egl_surface, state->egl_surface, state->egl_context);
-
+        
         draw(state);
 
         wl_surface_damage_buffer(state->wl_surface, 0, 0, INT32_MAX, INT32_MAX);

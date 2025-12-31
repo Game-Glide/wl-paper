@@ -83,6 +83,11 @@ void init_egl(app_state* state) {
 }
 
 void create_layer(app_state* state) {
+    if (!state->layer_shell) {
+        fprintf(stderr, "Your distribution does not appear to support zwlr_layer_shell_v1");
+        cleanup(state, 1);
+    }
+
     state->wl_surface = wl_compositor_create_surface(state->wl_compositor);
     wl_surface_set_buffer_scale(state->wl_surface, 1);
 
