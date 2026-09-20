@@ -8,6 +8,8 @@
 #include <mpv/client.h>
 #include <mpv/render.h>
 #include "zwlr-layer-shell-unstable-v1.h"
+#include "vlc/libvlc.h"
+#include "vlc/libvlc_media_player.h"
 
 #define IF_EXISTS_THEN(obj, code) \
     do {                          \
@@ -37,11 +39,15 @@ typedef struct app_state {
     mpv_render_context* mpv_ctx;
     char* filename;
 
+    libvlc_instance_t* vlc_instance;
+    libvlc_media_player_t* vlc_media_player;
+
     bool is_egl_ready;
     bool needs_redraw;
 
     volatile sig_atomic_t running;
     int mpv_fd;
+    int vlc_notify_fd;
 } app_state;
 
 void cleanup(app_state* state, uint32_t exit_status);
