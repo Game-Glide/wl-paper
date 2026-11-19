@@ -43,6 +43,7 @@ void init_mpv(app_state* state) {
         { MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &(mpv_opengl_init_params){
             .get_proc_address = &get_proc_address,
         }},
+        { MPV_RENDER_PARAM_ADVANCED_CONTROL, &(int){1} },
         { MPV_RENDER_PARAM_INVALID, NULL }
     };
 

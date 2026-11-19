@@ -1,10 +1,10 @@
 CC = gcc
 
-APP_CFLAGS = -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -g -D_POSIX_C_SOURCE=200809L
-VENDOR_CFLAGS = -Wall -Wextra -Wno-unused-parameter -g
+APP_CFLAGS = -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -o3 -D_POSIX_C_SOURCE=200809L
+VENDOR_CFLAGS = -Wall -Wextra -Wno-unused-parameter -o3
 
 INCLUDES = -Iinc -Ivendor/inc -I/usr/include -IEGL -IGL -Iwayland-egl
-LIBS = -lwayland-client -lEGL -lGL -lwayland-egl -lmpv
+LIBS = -lwayland-client -lEGL -lGL -lwayland-egl -lmpv -lvlc
 
 TARGET = wl-paper
 
